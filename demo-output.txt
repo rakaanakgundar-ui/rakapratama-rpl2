@@ -1,0 +1,43 @@
+﻿============================================================
+ DEMO OUTPUT - KABOY GARAGE (DESKTOP SWING + JDBC)
+ Tanggal: 2026-10-30 09:36:52
+============================================================
+
+>>> java kaboygarage.tools.SmokeTest
+Database : MySQL 5.5.5-10.11.16-MariaDB
+[OK] login admin / admin123
+[OK] polymorphism Admin.getPeran()
+[OK] login password salah ditolak
+[OK] katalog spare part terbaca (5)
+[OK] CREATE pelanggan
+[OK] polymorphism Pelanggan.getPeran()
+[OK] CREATE kendaraan
+[OK] relasi pelanggan - kendaraan
+[OK] CREATE pesanan + detail
+[OK] total pesanan dihitung
+[OK] status awal pesanan BARU
+[OK] stok berkurang otomatis setelah pesanan
+[OK] stok tidak cukup ditolak
+[OK] rollback stok saat pesanan gagal
+[OK] status pesanan BARU -> DIPROSES
+[OK] status pesanan DIPROSES -> SIAP DIAMBIL
+[OK] status pesanan SIAP DIAMBIL -> SELESAI
+[OK] pembatalan pesanan mengembalikan stok
+[OK] status pesanan DIBATALKAN
+[OK] CREATE pendaftaran servis
+[OK] status awal servis MENUNGGU
+[OK] jadwal servis disimpan
+[OK] status servis DIJADWALKAN -> DIKERJAKAN
+[OK] status servis DIKERJAKAN -> SELESAI
+[OK] statistik dashboard terbaca
+           spare part=5, pesanan aktif=0, antrean aktif=0, pelanggan=4
+
+SEMUA SMOKE TEST LULUS.
+
+Membersihkan data uji...
+[OK] data uji dibersihkan
+
+
+>>> java kaboygarage.tools.GuiSmokeTest
+GUI SMOKE TEST LULUS.
+
