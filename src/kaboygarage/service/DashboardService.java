@@ -1,41 +1,52 @@
 package kaboygarage.service;
 
-import kaboygarage.dao.PelangganDao;
-import kaboygarage.dao.PendaftaranServisDao;
-import kaboygarage.dao.PesananDao;
-import kaboygarage.dao.SparePartDao;
 import kaboygarage.dto.Statistik;
 import kaboygarage.model.PendaftaranServis;
 import kaboygarage.model.Pesanan;
 import kaboygarage.model.SparePart;
+import kaboygarage.repository.PelangganRepository;
+import kaboygarage.repository.PendaftaranServisRepository;
+import kaboygarage.repository.PesananRepository;
+import kaboygarage.repository.SparePartRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
  * Service yang menyiapkan ringkasan data untuk dashboard.
  */
+@Service
 public class DashboardService {
 
-    private final SparePartDao sparePartDao = new SparePartDao();
-    private final PesananDao pesananDao = new PesananDao();
-    private final PendaftaranServisDao servisDao = new PendaftaranServisDao();
-    private final PelangganDao pelangganDao = new PelangganDao();
+    @Autowired
+    private SparePartRepository sparePartRepository;
+
+    @Autowired
+    private PesananRepository pesananRepository;
+
+    @Autowired
+    private PendaftaranServisRepository servisRepository;
+
+    @Autowired
+    private PelangganRepository pelangganRepository;
 
     public Statistik statistik() {
         return new Statistik(
-                sparePartDao.count(),
-                pesananDao.countAktif(),
-                servisDao.countAktif(),
-                pelangganDao.count(),
-                sparePartDao.countMenipis());
+                (int) sparePartRepository.count(),
+                (int) pesananRepository.countAktif(),
+                (int) servisRepository.countAktif(),
+                (int) pelangganRepository.count(),
+                (int) sparePartRepository.countMenipis());
     }
 
     public List<SparePart> stokMenipis() {
-        return sparePartDao.findMenipis();
+        return sparePartRepository.findMenipis();
     }
 
     public List<Pesanan> pesananTerbaru(int jumlah) {
-        List<Pesanan> semua = pesananDao.findAll();
+        List<Pesanan> semua = pesananRepository.findAll();
         if (semua.size() <= jumlah) {
             return semua;
         }
@@ -43,7 +54,7 @@ public class DashboardService {
     }
 
     public List<PendaftaranServis> antreanTerbaru(int jumlah) {
-        List<PendaftaranServis> semua = servisDao.findAll();
+        List<PendaftaranServis> semua = servisRepository.findAll();
         if (semua.size() <= jumlah) {
             return semua;
         }

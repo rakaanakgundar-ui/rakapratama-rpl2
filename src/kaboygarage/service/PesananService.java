@@ -1,8 +1,5 @@
 package kaboygarage.service;
 
-import kaboygarage.dao.PesananDao;
-import kaboygarage.dao.SparePartDao;
-import kaboygarage.db.Database;
 import kaboygarage.dto.ItemPesanan;
 import kaboygarage.exception.AplikasiException;
 import kaboygarage.exception.StokTidakCukupException;
@@ -11,24 +8,31 @@ import kaboygarage.model.Pelanggan;
 import kaboygarage.model.Pesanan;
 import kaboygarage.model.SparePart;
 import kaboygarage.model.StatusPesanan;
+import kaboygarage.repository.PesananRepository;
+import kaboygarage.repository.SparePartRepository;
 import kaboygarage.util.KodeGenerator;
 import kaboygarage.util.Validasi;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Service pembuatan pesanan dan perubahan statusnya.
- *
- * <p>Pembuatan pesanan dan pengurangan stok dijalankan dalam satu transaksi
- * database (atomic), sehingga tidak ada pesanan yang tersimpan tanpa stok
- * yang benar.</p>
  */
+@Service
 public class PesananService {
 
-    private final PesananDao pesananDao = new PesananDao();
-    private final SparePartDao sparePartDao = new SparePartDao();
+    @Autowired
+    private PesananRepository pesananRepository;
 
+    @Autowired
+    private SparePartRepository sparePartRepository;
+
+    @Transactional
     public Pesanan buatPesanan(Pelanggan pelanggan, List<ItemPesanan> items, String catatan) {
         Validasi.wajibAda(pelanggan, "Pelanggan");
         if (items == null || items.isEmpty()) {
@@ -40,69 +44,59 @@ public class PesananService {
             if (item.getSparePart() == null || item.getSparePart().getId() == null) {
                 throw new AplikasiException("Spare part pesanan tidak valid.");
             }
-            SparePart terkini = sparePartDao.findById(item.getSparePart().getId());
-            if (terkini == null) {
-                throw new AplikasiException("Spare part sudah tidak tersedia di katalog.");
+            SparePart terkini = sparePartRepository.findById(item.getSparePart().getId())
+                    .orElseThrow(() -> new AplikasiException("Spare part sudah tidak tersedia di katalog."));
+            
+            if (terkini.getStok() < item.getJumlah()) {
+                throw new StokTidakCukupException(terkini.getNama(), terkini.getStok(), item.getJumlah());
             }
+            
             pesanan.tambahDetail(terkini, item.getJumlah());
         }
         pesanan.setCatatan(catatan == null ? null : catatan.trim());
 
-        return Database.inTransaction(connection -> {
-            for (DetailPesanan detail : pesanan.getDetail()) {
-                boolean cukup = sparePartDao.kurangiStok(
-                        connection, detail.getSparePart().getId(), detail.getJumlah());
-                if (!cukup) {
-                    SparePart cek = sparePartDao.findById(detail.getSparePart().getId());
-                    int stok = cek == null ? 0 : cek.getStok();
-                    throw new StokTidakCukupException(
-                            detail.getSparePart().getNama(), stok, detail.getJumlah());
-                }
-            }
-            pesananDao.insert(connection, pesanan);
-            return pesanan;
-        });
+        // Kurangi stok
+        for (DetailPesanan detail : pesanan.getDetail()) {
+            SparePart sp = detail.getSparePart();
+            sp.kurangiStok(detail.getJumlah());
+            sparePartRepository.save(sp);
+        }
+
+        return pesananRepository.save(pesanan);
     }
 
     public List<Pesanan> semua() {
-        return pesananDao.findAll();
+        return pesananRepository.findAll();
     }
 
     public Pesanan cari(Long id) {
-        return pesananDao.findById(id);
+        return pesananRepository.findById(id).orElse(null);
     }
 
     public List<Pesanan> terbaru(int jumlah) {
-        List<Pesanan> semua = pesananDao.findAll();
+        List<Pesanan> semua = pesananRepository.findAll();
         if (semua.size() <= jumlah) {
             return semua;
         }
         return new ArrayList<>(semua.subList(0, jumlah));
     }
 
-    /**
-     * Mengubah status pesanan. Bila pesanan dibatalkan, stok dikembalikan.
-     */
+    @Transactional
     public Pesanan ubahStatus(Long id, StatusPesanan statusBaru) {
-        Pesanan pesanan = pesananDao.findById(id);
-        if (pesanan == null) {
-            throw new AplikasiException("Pesanan tidak ditemukan.");
-        }
+        Pesanan pesanan = pesananRepository.findById(id)
+                .orElseThrow(() -> new AplikasiException("Pesanan tidak ditemukan."));
         pesanan.ubahStatus(statusBaru);
 
         if (statusBaru == StatusPesanan.DIBATALKAN) {
-            Database.inTransaction(connection -> {
-                for (DetailPesanan detail : pesanan.getDetail()) {
-                    sparePartDao.tambahStok(
-                            connection, detail.getSparePart().getId(), detail.getJumlah());
-                }
-                pesananDao.updateStatus(connection, id, statusBaru);
-                return null;
-            });
-        } else {
-            pesananDao.updateStatus(id, statusBaru);
+            // Kembalikan stok
+            for (DetailPesanan detail : pesanan.getDetail()) {
+                SparePart sp = detail.getSparePart();
+                sp.tambahStok(detail.getJumlah());
+                sparePartRepository.save(sp);
+            }
         }
-        return pesanan;
+
+        return pesananRepository.save(pesanan);
     }
 
     public Pesanan batalkan(Long id) {
@@ -110,6 +104,7 @@ public class PesananService {
     }
 
     public int totalAktif() {
-        return pesananDao.countAktif();
+        return (int) pesananRepository.countAktif();
     }
 }
+

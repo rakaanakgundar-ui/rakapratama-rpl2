@@ -2,24 +2,60 @@ package kaboygarage.model;
 
 import kaboygarage.exception.AplikasiException;
 
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 /**
  * Pendaftaran servis kendaraan (waiting list) beserta nomor antrean dan jadwal.
  */
+@Entity
+@Table(name = "pendaftaran_servis", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_pendaftaran_kode", columnNames = "kode_antrean")
+})
 public class PendaftaranServis {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, name = "kode_antrean", length = 30)
     private String kodeAntrean;
+
+    @Column(nullable = false, name = "nomor_antrean")
     private int nomorAntrean;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "pelanggan_id", nullable = false,
+                foreignKey = @ForeignKey(name = "fk_pendaftaran_pelanggan"))
     private Pelanggan pelanggan;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "kendaraan_id", nullable = false,
+                foreignKey = @ForeignKey(name = "fk_pendaftaran_kendaraan"))
     private Kendaraan kendaraan;
+
+    @Column(nullable = false, name = "jenis_servis", length = 30)
+    @Enumerated(EnumType.STRING)
     private JenisServis jenisServis;
+
+    @Column(nullable = false, length = 255)
     private String keluhan;
+
+    @Column(nullable = false, name = "tanggal_diajukan")
     private LocalDateTime tanggalDiajukan;
+
+    @Column(nullable = true, name = "jadwal_servis")
     private LocalDateTime jadwalServis;
+
+    @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     private StatusServis status = StatusServis.MENUNGGU;
+
+    @Column(nullable = true, name = "catatan_admin", length = 255)
     private String catatanAdmin;
+
+    public PendaftaranServis() {
+    }
 
     public PendaftaranServis(String kodeAntrean, int nomorAntrean, Pelanggan pelanggan,
                              Kendaraan kendaraan, JenisServis jenisServis, String keluhan) {

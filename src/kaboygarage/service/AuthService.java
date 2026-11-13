@@ -1,23 +1,31 @@
 package kaboygarage.service;
 
-import kaboygarage.dao.AdminDao;
-import kaboygarage.exception.AplikasiException;
 import kaboygarage.model.Admin;
+import kaboygarage.repository.AdminRepository;
+import kaboygarage.util.PasswordUtil;
 import kaboygarage.util.Validasi;
+import org.springframework.stereotype.Service;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Service autentikasi admin.
  */
+@Service
 public class AuthService {
 
-    private final AdminDao adminDao = new AdminDao();
+    @Autowired
+    private AdminRepository adminRepository;
 
     public Admin login(String username, String password) {
         String user = Validasi.wajibIsi(username, "Username");
         String pass = Validasi.wajibIsi(password, "Password");
-        Admin admin = adminDao.login(user, pass);
-        if (admin == null) {
-            throw new AplikasiException("Username atau password salah.");
+        
+        Admin admin = adminRepository.findByUsername(user);
+        if (admin == null || !admin.isAktif()) {
+            return null;
+        }
+        if (!PasswordUtil.cocok(pass, admin.getPasswordHash())) {
+            return null;
         }
         return admin;
     }

@@ -1,47 +1,27 @@
 package kaboygarage.gui;
 
-import kaboygarage.db.Database;
+import kaboygarage.ApplicationContextHolder;
 import kaboygarage.exception.AplikasiException;
 import kaboygarage.model.Admin;
 import kaboygarage.service.AuthService;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.JButton;
-import javax.swing.JCheckBox;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.JPasswordField;
-import javax.swing.JTextField;
-import javax.swing.SwingConstants;
+import org.springframework.context.ApplicationContext;
+
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.BorderLayout;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Font;
-import java.awt.GradientPaint;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.RenderingHints;
-import java.awt.Toolkit;
-import java.sql.SQLException;
+import java.awt.*;
 
 /**
  * Halaman login admin Kaboy Garage.
  */
 public class LoginFrame extends JFrame {
 
-    private final AuthService authService = new AuthService();
     private final JTextField usernameField = Theme.textField();
     private final JPasswordField passwordField = Theme.passwordField();
     private final JLabel statusLabel = new JLabel(" ", SwingConstants.CENTER);
     private final JButton loginButton = Theme.primaryButton("Masuk");
 
-    public LoginFrame() {
+    public LoginFrame(ApplicationContext applicationContext) {
         setTitle("Kaboy Garage - Login Admin");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         Dimension layar = Toolkit.getDefaultToolkit().getScreenSize();
@@ -160,19 +140,22 @@ public class LoginFrame extends JFrame {
 
     private void cekDatabase() {
         try {
-            String versi = Database.testConnection();
-            statusLabel.setText("Terhubung ke " + versi);
+            statusLabel.setText("Terhubung ke database");
             statusLabel.setForeground(Theme.ACCENT_DARK);
-        } catch (SQLException e) {
-            statusLabel.setText("Database belum siap - jalankan MySQL dan import SQL");
+        } catch (Exception e) {
+            statusLabel.setText("Database belum siap");
             statusLabel.setForeground(Theme.DANGER);
         }
     }
 
     private void login() {
         try {
+            AuthService authService = ApplicationContextHolder.getBean(AuthService.class);
             Admin admin = authService.login(
                     usernameField.getText(), new String(passwordField.getPassword()));
+            if (admin == null) {
+                throw new AplikasiException("Username atau password salah.");
+            }
             MainFrame mainFrame = new MainFrame(admin);
             mainFrame.setVisible(true);
             dispose();
@@ -185,25 +168,19 @@ public class LoginFrame extends JFrame {
         }
     }
 
-    /**
-     * Panel header dengan gradasi warna gelap ke oranye.
-     */
     private static final class GradientPanel extends JPanel {
-
-        private GradientPanel() {
+        GradientPanel() {
             setOpaque(false);
         }
 
         @Override
-        protected void paintComponent(Graphics graphics) {
-            Graphics2D g2 = (Graphics2D) graphics.create();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-            g2.setPaint(new GradientPaint(0, 0, Theme.SIDEBAR,
-                    getWidth(), getHeight(), Theme.ACCENT_DARK));
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g2.setPaint(new GradientPaint(0, 0, Theme.SIDEBAR, getWidth(), getHeight(), Theme.ACCENT_DARK));
             g2.fillRect(0, 0, getWidth(), getHeight());
             g2.dispose();
-            super.paintComponent(graphics);
+            super.paintComponent(g);
         }
     }
 }

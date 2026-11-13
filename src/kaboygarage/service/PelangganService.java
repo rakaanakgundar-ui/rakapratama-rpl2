@@ -1,56 +1,58 @@
 package kaboygarage.service;
 
-import kaboygarage.dao.KendaraanDao;
-import kaboygarage.dao.PelangganDao;
 import kaboygarage.exception.AplikasiException;
 import kaboygarage.model.Kendaraan;
 import kaboygarage.model.Pelanggan;
+import kaboygarage.repository.KendaraanRepository;
+import kaboygarage.repository.PelangganRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
  * Service pengelolaan pelanggan dan kendaraannya.
  */
+@Service
 public class PelangganService {
 
-    private final PelangganDao pelangganDao = new PelangganDao();
-    private final KendaraanDao kendaraanDao = new KendaraanDao();
+    @Autowired
+    private PelangganRepository pelangganRepository;
+
+    @Autowired
+    private KendaraanRepository kendaraanRepository;
 
     public List<Pelanggan> semua() {
-        return pelangganDao.findAll();
+        return pelangganRepository.findAll();
     }
 
     public Pelanggan cari(Long id) {
-        return pelangganDao.findById(id);
+        return pelangganRepository.findById(id).orElse(null);
     }
 
     public void simpan(Pelanggan pelanggan) {
         if (pelanggan == null) {
             throw new AplikasiException("Data pelanggan tidak boleh kosong.");
         }
-        if (pelanggan.getId() == null) {
-            pelangganDao.insert(pelanggan);
-        } else {
-            pelangganDao.update(pelanggan);
-        }
+        pelangganRepository.save(pelanggan);
     }
 
     public void hapus(Long id) {
         if (id == null) {
             throw new AplikasiException("Pelanggan wajib dipilih.");
         }
-        pelangganDao.delete(id);
+        pelangganRepository.deleteById(id);
     }
 
     public List<Kendaraan> kendaraan(Long pelangganId) {
         if (pelangganId == null) {
             throw new AplikasiException("Pelanggan wajib dipilih.");
         }
-        return kendaraanDao.findByPelanggan(pelangganId);
+        return kendaraanRepository.findByPelangganId(pelangganId);
     }
 
     public List<Kendaraan> semuaKendaraan() {
-        return kendaraanDao.findAll();
+        return kendaraanRepository.findAll();
     }
 
     public void simpanKendaraan(Kendaraan kendaraan) {
@@ -60,25 +62,21 @@ public class PelangganService {
         if (kendaraan.getPelanggan() == null || kendaraan.getPelanggan().getId() == null) {
             throw new AplikasiException("Pilih pelanggan pemilik kendaraan terlebih dahulu.");
         }
-        if (kendaraan.getId() == null) {
-            kendaraanDao.insert(kendaraan);
-        } else {
-            kendaraanDao.update(kendaraan);
-        }
+        kendaraanRepository.save(kendaraan);
     }
 
     public void hapusKendaraan(Long id) {
         if (id == null) {
             throw new AplikasiException("Kendaraan wajib dipilih.");
         }
-        kendaraanDao.delete(id);
+        kendaraanRepository.deleteById(id);
     }
 
     public int totalPelanggan() {
-        return pelangganDao.count();
+        return (int) pelangganRepository.count();
     }
 
     public int totalKendaraan() {
-        return kendaraanDao.count();
+        return (int) kendaraanRepository.count();
     }
 }

@@ -1,32 +1,38 @@
 package kaboygarage.service;
 
-import kaboygarage.dao.SparePartDao;
-import kaboygarage.db.DataAccessException;
 import kaboygarage.exception.AplikasiException;
 import kaboygarage.model.SparePart;
+import kaboygarage.repository.SparePartRepository;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 /**
  * Service pengelolaan katalog spare part.
  */
+@Service
 public class SparePartService {
 
-    private final SparePartDao sparePartDao = new SparePartDao();
+    @Autowired
+    private SparePartRepository sparePartRepository;
 
     public List<SparePart> semua() {
-        return sparePartDao.findAll();
+        return sparePartRepository.findAll();
     }
 
     public List<SparePart> cari(String keyword) {
         if (keyword == null || keyword.trim().isEmpty()) {
-            return sparePartDao.findAll();
+            return sparePartRepository.findAll();
         }
-        return sparePartDao.findByKeyword(keyword.trim());
+        String pola = "%" + keyword.trim() + "%";
+        return sparePartRepository.findByKeyword(pola);
     }
 
     public SparePart cari(Long id) {
-        return sparePartDao.findById(id);
+        return sparePartRepository.findById(id).orElse(null);
     }
 
     public void simpan(SparePart sparePart) {
@@ -34,12 +40,8 @@ public class SparePartService {
             throw new AplikasiException("Data spare part tidak boleh kosong.");
         }
         try {
-            if (sparePart.getId() == null) {
-                sparePartDao.insert(sparePart);
-            } else {
-                sparePartDao.update(sparePart);
-            }
-        } catch (DataAccessException e) {
+            sparePartRepository.save(sparePart);
+        } catch (DataIntegrityViolationException e) {
             if (e.getMessage() != null && e.getMessage().contains("Duplicate entry")) {
                 throw new AplikasiException("Kode spare part sudah dipakai. Gunakan kode lain.");
             }
@@ -48,38 +50,39 @@ public class SparePartService {
     }
 
     public void hapus(Long id) {
-        ValidasiId.wajib(id, "Spare part");
-        sparePartDao.delete(id);
-    }
-
-    public String kodeBerikutnya() {
-        return sparePartDao.nextKode();
+        if (id == null) {
+            throw new AplikasiException("Spare part wajib dipilih.");
+        }
+        sparePartRepository.deleteById(id);
     }
 
     public List<SparePart> stokMenipis() {
-        return sparePartDao.findMenipis();
+        return sparePartRepository.findMenipis();
     }
 
     public int total() {
-        return sparePartDao.count();
+        return (int) sparePartRepository.count();
     }
 
     public int totalStokMenipis() {
-        return sparePartDao.countMenipis();
+        return (int) sparePartRepository.countMenipis();
     }
 
-    /**
-     * Validasi id sederhana agar pesan error konsisten.
-     */
-    private static final class ValidasiId {
-
-        private ValidasiId() {
+    public String kodeBerikutnya() {
+        List<SparePart> semua = sparePartRepository.findAll();
+        if (semua.isEmpty()) {
+            return "SP001";
         }
-
-        static void wajib(Long id, String nama) {
-            if (id == null) {
-                throw new AplikasiException(nama + " wajib dipilih.");
+        int maxNum = 0;
+        for (SparePart sp : semua) {
+            if (sp.getKode() != null && sp.getKode().startsWith("SP")) {
+                try {
+                    int num = Integer.parseInt(sp.getKode().substring(2));
+                    if (num > maxNum) maxNum = num;
+                } catch (NumberFormatException ignored) {
+                }
             }
         }
+        return String.format("SP%03d", maxNum + 1);
     }
 }

@@ -2,6 +2,7 @@ package kaboygarage.model;
 
 import kaboygarage.util.Validasi;
 
+import jakarta.persistence.*;
 import java.util.Objects;
 
 /**
@@ -11,10 +12,17 @@ import java.util.Objects;
  * langsung karena perannya ditentukan oleh subclass melalui
  * {@link #getPeran()} (abstraction + polymorphism).</p>
  */
+@MappedSuperclass
 public abstract class Orang {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, length = 100)
     private String nama;
+
+    @Column(nullable = false, name = "no_hp", length = 20)
     private String noHp;
 
     protected Orang() {

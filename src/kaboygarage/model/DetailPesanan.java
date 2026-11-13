@@ -1,18 +1,38 @@
 package kaboygarage.model;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 /**
  * Satu baris item pada pesanan. Harga disimpan sebagai snapshot agar total
  * pesanan lama tidak berubah ketika harga katalog diperbarui.
  */
+@Entity
+@Table(name = "detail_pesanan")
 public class DetailPesanan {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "pesanan_id", nullable = false,
+                foreignKey = @ForeignKey(name = "fk_detail_pesanan"))
     private Pesanan pesanan;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "spare_part_id", nullable = false,
+                foreignKey = @ForeignKey(name = "fk_detail_spare_part"))
     private SparePart sparePart;
+
+    @Column(nullable = false)
     private int jumlah;
+
+    @Column(nullable = false, name = "harga_satuan", precision = 12, scale = 2)
     private BigDecimal hargaSatuan;
+
+    public DetailPesanan() {
+    }
 
     public DetailPesanan(Pesanan pesanan, SparePart sparePart, int jumlah,
                          BigDecimal hargaSatuan) {

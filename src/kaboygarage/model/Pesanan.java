@@ -2,6 +2,7 @@ package kaboygarage.model;
 
 import kaboygarage.exception.AplikasiException;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -14,15 +15,39 @@ import java.util.List;
  * <p>Pesanan memiliki banyak detail item (one-to-many). Total selalu dihitung
  * dari detail sehingga tidak ada data uang yang terduplikasi.</p>
  */
+@Entity
+@Table(name = "pesanan", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_pesanan_kode", columnNames = "kode")
+})
 public class Pesanan {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, length = 30)
     private String kode;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "pelanggan_id", nullable = false,
+                foreignKey = @ForeignKey(name = "fk_pesanan_pelanggan"))
     private Pelanggan pelanggan;
+
+    @Column(nullable = false, name = "tanggal_dibuat")
     private LocalDateTime tanggalDibuat;
+
+    @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     private StatusPesanan status = StatusPesanan.BARU;
+
+    @Column(nullable = true, length = 255)
     private String catatan;
+
+    @OneToMany(mappedBy = "pesanan", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private final List<DetailPesanan> detail = new ArrayList<>();
+
+    public Pesanan() {
+    }
 
     public Pesanan(String kode, Pelanggan pelanggan) {
         this(kode, pelanggan, LocalDateTime.now());

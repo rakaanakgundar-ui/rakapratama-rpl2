@@ -1,5 +1,6 @@
 package kaboygarage.gui;
 
+import kaboygarage.ApplicationContextHolder;
 import kaboygarage.model.Admin;
 import kaboygarage.service.DashboardService;
 import kaboygarage.service.PelangganService;
@@ -30,6 +31,11 @@ import java.util.Map;
 public class MainFrame extends JFrame {
 
     private final Admin admin;
+    private final DashboardService dashboardService = ApplicationContextHolder.getBean(DashboardService.class);
+    private final PelangganService pelangganService = ApplicationContextHolder.getBean(PelangganService.class);
+    private final SparePartService sparePartService = ApplicationContextHolder.getBean(SparePartService.class);
+    private final PesananService pesananService = ApplicationContextHolder.getBean(PesananService.class);
+    private final WaitingListService waitingListService = ApplicationContextHolder.getBean(WaitingListService.class);
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel content = new JPanel(cardLayout);
     private final Map<String, JButton> navButtons = new LinkedHashMap<>();
@@ -230,7 +236,7 @@ public class MainFrame extends JFrame {
     private void keluar() {
         if (Theme.confirm(this, "Keluar dari aplikasi?")) {
             dispose();
-            new LoginFrame().setVisible(true);
+            new LoginFrame(ApplicationContextHolder.getApplicationContext()).setVisible(true);
         }
     }
 }

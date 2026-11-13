@@ -2,14 +2,28 @@ package kaboygarage.model;
 
 import kaboygarage.util.Validasi;
 
+import jakarta.persistence.*;
+
 /**
  * INHERITANCE: Admin adalah Orang yang memiliki akun untuk masuk ke aplikasi.
  */
+@Entity
+@Table(name = "admin", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_admin_username", columnNames = "username")
+})
 public class Admin extends Orang {
 
+    @Column(nullable = false, length = 50)
     private String username;
+
+    @Column(nullable = false, name = "password_hash", length = 64)
     private String passwordHash;
+
+    @Column(nullable = false)
     private boolean aktif = true;
+
+    public Admin() {
+    }
 
     public Admin(String nama, String noHp, String username, String passwordHash) {
         super(nama, noHp);

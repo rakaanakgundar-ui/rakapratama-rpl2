@@ -3,6 +3,7 @@ package kaboygarage.model;
 import kaboygarage.exception.StokTidakCukupException;
 import kaboygarage.util.Validasi;
 
+import jakarta.persistence.*;
 import java.math.BigDecimal;
 
 /**
@@ -12,17 +13,46 @@ import java.math.BigDecimal;
  * {@link #tambahStok(int)} agar aturan stok tidak tersebar di GUI
  * (encapsulation perilaku).</p>
  */
+@Entity
+@Table(name = "spare_part", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_spare_part_kode", columnNames = "kode")
+})
 public class SparePart {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false, length = 20)
     private String kode;
+
+    @Column(nullable = false, length = 100)
     private String nama;
+
+    @Column(nullable = true, length = 50)
     private String merk;
+
+    @Column(nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
     private KategoriSparePart kategori;
+
+    @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal harga;
+
+    @Column(nullable = false)
     private int stok;
+
+    @Column(nullable = false, name = "stok_minimal")
     private int stokMinimal = 3;
+
+    @Column(nullable = true, length = 255)
     private String deskripsi;
+
+    @OneToMany(mappedBy = "sparePart")
+    private java.util.List<DetailPesanan> daftarDetail = new java.util.ArrayList<>();
+
+    public SparePart() {
+    }
 
     public SparePart(String kode, String nama, String merk, KategoriSparePart kategori,
                      BigDecimal harga, int stok) {
